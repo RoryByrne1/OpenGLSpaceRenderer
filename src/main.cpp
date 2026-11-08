@@ -16,6 +16,8 @@ struct Camera {
     glm::vec3 position;
     glm::vec3 forward;
     glm::vec3 up;
+    float yaw = -90.0f;
+    float pitch = 0.0f;
 };
 
 struct Planet {
@@ -35,6 +37,7 @@ struct Scene {
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window, Camera& camera, float deltaTime);
+void updateCameraDirection(Camera& camera);
 
 Material getPaperMaterial() {
     return Material(glm::vec3(0.7, 0.7, 0.7), glm::vec3(0, 0, 0), 5.0, 0.0, 0.0, 0.0);
@@ -45,8 +48,10 @@ int main()
     // setup the camera
     Camera camera{};
     camera.position = glm::vec3(0.0f, 0.0f, 0.0f);
-    camera.forward = glm::vec3(0.0f, 0.0f, -1.0f);
-    camera.up = glm::vec3(0.0f, 1.0f, 0.0f);
+    camera.yaw = -90.0f;
+    camera.pitch = 0.0f;
+
+    updateCameraDirection(camera);
 
     // setup the planetary system
     PlanetarySystem system{};
@@ -146,6 +151,7 @@ int main()
         // activate the shader program
         ourShader.use();
 
+        updateCameraDirection(camera);
         ourShader.setVec3("cameraPosition", camera.position);
         ourShader.setVec3("cameraForward", camera.forward);
         ourShader.setVec3("cameraUp", camera.up);
@@ -198,6 +204,46 @@ void processInput(GLFWwindow* window, Camera& camera, float deltaTime)
 
     if (glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS)
         camera.position -= camera.up * velocity;
+
+    float rotationSpeed = 30.0f * deltaTime;
+
+    if (glfwGetKey(window, GLFW_KEY_LEFT) == GLFW_PRESS)
+        camera.yaw -= rotationSpeed;
+
+    if (glfwGetKey(window, GLFW_KEY_RIGHT) == GLFW_PRESS)
+        camera.yaw += rotationSpeed;
+
+    if (glfwGetKey(window, GLFW_KEY_UP) == GLFW_PRESS)
+        camera.pitch += rotationSpeed;
+
+    if (glfwGetKey(window, GLFW_KEY_DOWN) == GLFW_PRESS)
+        camera.pitch -= rotationSpeed;
+
+    // prevent straight up or straight down
+    camera.pitch = glm::clamp(camera.pitch, -89.0f, 89.0f);
+
+    updateCameraDirection(camera);
+}
+
+void updateCameraDirection(Camera& camera)
+{
+    glm::vec3 direction;
+
+    direction.x = cos(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
+    direction.y = sin(glm::radians(camera.pitch));
+    direction.z = sin(glm::radians(camera.yaw)) * cos(glm::radians(camera.pitch));
+
+    camera.forward = glm::normalize(direction);
+
+    glm::vec3 worldUp(0.0f, 1.0f, 0.0f);
+
+    glm::vec3 right = glm::normalize(
+        glm::cross(camera.forward, worldUp)
+    );
+
+    camera.up = glm::normalize(
+        glm::cross(right, camera.forward)
+    );
 }
 
 // glfw: whenever the window size changed (by OS or user resize) this callback function executes

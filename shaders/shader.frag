@@ -353,6 +353,7 @@ vec3 tonemap(const vec3 radiance) {
 void main()
 {
   Scene scene;
+  scene.ambient = vec3(0.005);
 
   PointLight star;
   star.color = vec3(1.0, 0.95, 0.85);
