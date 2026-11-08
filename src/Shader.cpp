@@ -1,4 +1,5 @@
 #include <glad/glad.h>
+#include <glm/glm/glm.hpp>
 
 #include <string>
 #include <fstream>
@@ -105,4 +106,9 @@ void Shader::setInt(const std::string& name, int value) const
 void Shader::setFloat(const std::string& name, float value) const
 {
 	glUniform1f(glGetUniformLocation(ID, name.c_str()), value);
+}
+
+void Shader::setVec3(const std::string& name, glm::vec3 value) const
+{
+	glUniform3f(glGetUniformLocation(ID, name.c_str()), value.x, value.y, value.z);
 }
