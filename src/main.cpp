@@ -29,18 +29,12 @@ struct PlanetarySystem {
     std::vector<Planet> planets;
 };
 
-struct Scene {
-    glm::vec3 ambient;
-    std::vector<PointLight> lights;
-    std::vector<Sphere> spheres;
-};
-
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void processInput(GLFWwindow* window, Camera& camera, float deltaTime);
 void updateCameraDirection(Camera& camera);
 
 Material getPaperMaterial() {
-    return Material(glm::vec3(0.7, 0.7, 0.7), glm::vec3(0, 0, 0), 5.0, 0.0, 0.0, 0.0);
+    return Material(glm::vec3(0.7f), glm::vec3(0.0f), 5.0f, 0.0f, 0.0f, 0.0f);
 }
 
 int main()
@@ -67,6 +61,8 @@ int main()
 
     system.star = star;
     system.planets.push_back(planet);
+
+    glm::vec3 ambient_lighting = glm::vec3(0.005f);
 
 
     // glfw: initialize and configure
@@ -145,7 +141,7 @@ int main()
         processInput(window, camera, deltaTime);
 
         // render
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f); // unnecessary?
         glClear(GL_COLOR_BUFFER_BIT);
 
         // activate the shader program
@@ -155,6 +151,24 @@ int main()
         ourShader.setVec3("cameraPosition", camera.position);
         ourShader.setVec3("cameraForward", camera.forward);
         ourShader.setVec3("cameraUp", camera.up);
+
+        ourShader.setVec3("scene.ambient", ambient_lighting);
+        ourShader.setInt("scene.sphereCount", system.planets.size());
+        ourShader.setInt("scene.lightCount", 1);
+        for (int i = 0; i < system.planets.size(); i++)
+        {
+            std::string sphere_str = "scene.spheres[" + std::to_string(i) + "]";
+            ourShader.setVec3(sphere_str + ".position", system.planets[i].sphere.position);
+            ourShader.setFloat(sphere_str + ".radius", system.planets[i].sphere.radius);
+            ourShader.setVec3(sphere_str + ".material.diffuse", system.planets[i].sphere.material.diffuse);
+            ourShader.setVec3(sphere_str + ".material.specular", system.planets[i].sphere.material.specular);
+            ourShader.setFloat(sphere_str + ".material.glossiness", system.planets[i].sphere.material.glossiness);
+            ourShader.setFloat(sphere_str + ".material.reflection", system.planets[i].sphere.material.reflection);
+            ourShader.setFloat(sphere_str + ".material.refraction", system.planets[i].sphere.material.refraction);
+            ourShader.setFloat(sphere_str + ".material.ior", system.planets[i].sphere.material.ior);
+        }
+        ourShader.setVec3("scene.lights[0].position", system.star.position);
+        ourShader.setVec3("scene.lights[0].color", system.star.color);
 
         glfwGetFramebufferSize(window, &width, &height);
         glUniform2i(glGetUniformLocation(ourShader.ID, "viewport"), width, height);

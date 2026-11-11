@@ -1,12 +1,7 @@
 #version 330 core
 
-out vec4 FragColor;
-
-uniform ivec2 viewport;
-
-uniform vec3 cameraPosition;
-uniform vec3 cameraForward;
-uniform vec3 cameraUp;
+#define MAX_SPHERES 10
+#define MAX_LIGHTS 10
 
 struct PointLight {
 	vec3 position;
@@ -28,14 +23,25 @@ struct Sphere {
 	Material material;
 };
 
-const int lightCount = 1;
-const int sphereCount = 1;
-
 struct Scene {
-	vec3 ambient;
-	PointLight lights[lightCount];
-	Sphere spheres[sphereCount];
+    vec3 ambient;
+    int lightCount;
+    int sphereCount;
+    PointLight lights[MAX_LIGHTS];
+    Sphere spheres[MAX_SPHERES];
 };
+
+
+uniform ivec2 viewport;
+
+uniform vec3 cameraPosition;
+uniform vec3 cameraForward;
+uniform vec3 cameraUp;
+
+uniform Scene scene;
+
+out vec4 FragColor;
+
 
 struct Ray {
 	vec3 origin;
@@ -51,6 +57,7 @@ struct HitInfo {
 	Material material;
 	bool enteringPrimitive;
 };
+
 
 HitInfo getEmptyHit() {
 	return HitInfo(
@@ -158,7 +165,7 @@ HitInfo intersectScene(const Scene scene, const Ray ray, const float tMin, const
 	bestHitInfo.t = tMax;
 	bestHitInfo.hit = false;
 	
-	for (int i = 0; i < sphereCount; ++i) {
+	for (int i = 0; i < scene.sphereCount; ++i) {
 		bestHitInfo = getBetterHitInfo(bestHitInfo, intersectSphere(ray, scene.spheres[i], tMin, tMax));
 	}
 	
@@ -206,7 +213,7 @@ vec3 shade(const Scene scene, const Ray ray, inout HitInfo hitInfo) {
   	}
   
     vec3 shading = scene.ambient * hitInfo.material.diffuse;
-    for (int i = 0; i < lightCount; ++i) {
+    for (int i = 0; i < scene.lightCount; ++i) {
         shading += shadeFromLight(scene, ray, hitInfo, scene.lights[i]); 
     }
     return shading;
@@ -352,22 +359,6 @@ vec3 tonemap(const vec3 radiance) {
 
 void main()
 {
-  Scene scene;
-  scene.ambient = vec3(0.005);
-
-  PointLight star;
-  star.color = vec3(1.0, 0.95, 0.85);
-  star.position = vec3(0, 0, 0);
-
-  Sphere planet;
-  planet.position = vec3(-1.0, 0.0, -5.0);
-  planet.material = getPaperMaterial();
-  planet.radius = 1.0;
-
-  scene.lights[0] = star;
-
-  scene.spheres[0] = planet;
-
   FragColor.rgb = tonemap(colorForFragment(scene, gl_FragCoord.xy));
   FragColor.a = 1.0;
 }
